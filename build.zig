@@ -1,58 +1,76 @@
+const builtin = @import("builtin");
 const std = @import("std");
-const Builder = std.build.Builder;
 
-pub fn build(b: *Builder) void {
+pub const EngineKind = enum {
+    kiesel,
+    quickjs,
+    mquickjs,
+};
+
+pub fn build(b: *std.Build) void {
+    if (builtin.zig_version.order(.{ .major = 0, .minor = 16, .patch = 0 }) == .lt) {
+        std.debug.print("Zig 0.16.0 is required, found {s}.\n", .{builtin.zig_version_string});
+        std.process.exit(1);
+    }
+
     const target = b.standardTargetOptions(.{});
+    const optimize = b.standardOptimizeOption(.{});
+    const engine = b.option(EngineKind, "engine", "JavaScript engine backend") orelse .kiesel;
 
-    const s4 = b.dependency("s4", .{
+    if (engine != .kiesel) {
+        std.debug.print(
+            "-Dengine={t} is not implemented yet; Phase 1 only supports kiesel.\n",
+            .{engine},
+        );
+        std.process.exit(1);
+    }
+
+    const options = b.addOptions();
+    options.addOption([]const u8, "engine", @tagName(engine));
+
+    const kiesel = b.dependency("kiesel", .{
         .target = target,
-        // suppress current s4 UB
-        .optimize = .ReleaseFast,
+        .optimize = optimize,
+        .@"enable-intl" = false,
+        .@"enable-temporal" = false,
+        .@"build-cli" = false,
     });
 
-    const libgitz = b.dependency("libgitz", .{
+    const root_module = b.createModule(.{
+        .root_source_file = b.path("src/main.zig"),
+        .imports = &.{
+            .{ .name = "build-options", .module = options.createModule() },
+            .{ .name = "kiesel", .module = kiesel.module("kiesel") },
+        },
         .target = target,
+        .optimize = optimize,
     });
 
-    const flog = b.addExecutable(.{
+    const exe = b.addExecutable(.{
         .name = "flog",
-        .target = target,
-        .root_source_file = .{ .path = "helper.zig" },
+        .root_module = root_module,
+        .use_llvm = true,
     });
-    // expose s4's symbols to dynamically loaded (.so) modules
-    flog.rdynamic = true;
-    flog.install();
-    flog.installLibraryHeaders(s4.artifact("s4"));
-    flog.installLibraryHeaders(libgitz.artifact("gitz"));
-    flog.linkLibrary(s4.artifact("s4"));
-    flog.linkLibC();
-    flog.linkLibrary(libgitz.artifact("gitz"));
-    flog.addIncludePath(".");
-    flog.addCSourceFiles(&.{
-        "src/app.c",
-        "src/database.c",
-        "src/engine.c",
-        "src/file.c",
-        "src/flog.c",
-        "src/git.c",
-        "src/module.c",
-        "src/module-json.c",
-        "src/string.c",
-        "src/commands/base.c",
-        "src/commands/file.c",
-        "src/commands/help.c",
-        "src/commands/info.c",
-        "src/commands/install.c",
-        "src/commands/list.c",
-        "src/commands/script.c",
-        "src/commands/sync.c",
-        "src/commands/update.c",
-        "src/commands/with.c",
-    }, &.{
-        "-std=c11",
-        "-pedantic",
-        "-Wall",
-        "-W",
-        "-Wno-missing-field-initializers",
+    b.installArtifact(exe);
+
+    const run_cmd = b.addRunArtifact(exe);
+    run_cmd.step.dependOn(b.getInstallStep());
+    if (b.args) |args| {
+        run_cmd.addArgs(args);
+    }
+
+    const run_step = b.step("run", "Run flog");
+    run_step.dependOn(&run_cmd.step);
+
+    const unit_tests = b.addTest(.{
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/tests.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+        .use_llvm = true,
     });
+    const run_unit_tests = b.addRunArtifact(unit_tests);
+    const test_step = b.step("test", "Run unit tests");
+    test_step.dependOn(&run_unit_tests.step);
 }

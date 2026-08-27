@@ -4,3 +4,5 @@ modules
 *.[ao]
 *.json
 zig*
+.zig-cache/
+zig-out/
