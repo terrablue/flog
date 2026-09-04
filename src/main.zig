@@ -33,7 +33,14 @@ pub fn main(init: std.process.Init) !u8 {
             return 1;
         },
         .run_file, .eval => {
-            const app = try App.init(gpa, io, environ_map);
+            const app = App.init(gpa, io, environ_map) catch |err| switch (err) {
+                error.EngineInitFailed => {
+                    try stderr.writeAll("error: failed to initialize JS engine\n");
+                    try stderr.flush();
+                    return 1;
+                },
+                else => |e| return e,
+            };
             defer app.deinit();
 
             return commands.run(app, command) catch |err| switch (err) {
