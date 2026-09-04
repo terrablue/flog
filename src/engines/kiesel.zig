@@ -39,7 +39,7 @@ pub const Engine = struct {
         gpa: std.mem.Allocator,
         io: std.Io,
         environ_map: *const std.process.Environ.Map,
-    ) (std.mem.Allocator.Error || error{ExceptionThrown})!*Engine {
+    ) (std.mem.Allocator.Error || error{ ExceptionThrown, EngineInitFailed })!*Engine {
         if (kiesel.build_options.enable_libgc) {
             kiesel.gc.disableWarnings();
         }

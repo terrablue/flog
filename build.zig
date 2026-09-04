@@ -17,10 +17,10 @@ pub fn build(b: *std.Build) void {
     const optimize = b.standardOptimizeOption(.{});
     const engine = b.option(EngineKind, "engine", "JavaScript engine backend") orelse .kiesel;
 
-    if (engine != .kiesel) {
+    if (engine == .mquickjs and (optimize == .Debug or optimize == .ReleaseSafe)) {
         std.debug.print(
-            "-Dengine={t} is not implemented yet; Phase 1 only supports kiesel.\n",
-            .{engine},
+            "mquickjs requires -Doptimize=ReleaseFast or -Doptimize=ReleaseSmall (tagged-pointer JSValues).\n",
+            .{},
         );
         std.process.exit(1);
     }
@@ -28,23 +28,62 @@ pub fn build(b: *std.Build) void {
     const options = b.addOptions();
     options.addOption([]const u8, "engine", @tagName(engine));
 
-    const kiesel = b.dependency("kiesel", .{
-        .target = target,
-        .optimize = optimize,
-        .@"enable-intl" = false,
-        .@"enable-temporal" = false,
-        .@"build-cli" = false,
-    });
-
     const root_module = b.createModule(.{
         .root_source_file = b.path("src/main.zig"),
         .imports = &.{
             .{ .name = "build-options", .module = options.createModule() },
-            .{ .name = "kiesel", .module = kiesel.module("kiesel") },
         },
         .target = target,
         .optimize = optimize,
     });
+
+    switch (engine) {
+        .kiesel => {
+            const kiesel = b.lazyDependency("kiesel", .{
+                .target = target,
+                .optimize = optimize,
+                .@"enable-intl" = false,
+                .@"enable-temporal" = false,
+                .@"build-cli" = false,
+            }) orelse return;
+            root_module.addImport("kiesel", kiesel.module("kiesel"));
+        },
+        .quickjs => {
+            const quickjs = b.lazyDependency("quickjs", .{}) orelse return;
+            root_module.link_libc = true;
+            root_module.addIncludePath(quickjs.path("."));
+            root_module.addCMacro("CONFIG_VERSION", "\"2026-06-04\"");
+            root_module.addCMacro("_GNU_SOURCE", "1");
+            root_module.addCSourceFiles(.{
+                .root = quickjs.path("."),
+                .files = &.{
+                    "quickjs.c",
+                    "dtoa.c",
+                    "libregexp.c",
+                    "libunicode.c",
+                    "cutils.c",
+                },
+                .flags = &.{
+                    "-std=gnu11",
+                    "-fwrapv",
+                    "-Wno-everything",
+                },
+            });
+            root_module.linkSystemLibrary("m", .{});
+        },
+        .mquickjs => {
+            const mqjs = b.lazyDependency("zig_mquickjs", .{
+                .target = target,
+                .optimize = optimize,
+                .@"build-cli" = false,
+            }) orelse return;
+            root_module.link_libc = true;
+            root_module.addImport("mqjs_stdlib_data", mqjs.module("mqjs_stdlib_data"));
+            root_module.addIncludePath(mqjs.path("include"));
+            root_module.addIncludePath(mqjs.namedWriteFiles("generated_headers").getDirectory());
+            root_module.linkLibrary(mqjs.artifact("mquickjs"));
+        },
+    }
 
     const exe = b.addExecutable(.{
         .name = "flog",

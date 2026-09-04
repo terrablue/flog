@@ -13,7 +13,7 @@ pub const App = struct {
         gpa: std.mem.Allocator,
         io: std.Io,
         environ_map: *const std.process.Environ.Map,
-    ) (std.mem.Allocator.Error || error{ExceptionThrown})!*App {
+    ) !*App {
         const engine = try Engine.init(gpa, io, environ_map);
         errdefer engine.deinit();
 

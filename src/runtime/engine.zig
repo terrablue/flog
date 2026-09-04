@@ -12,5 +12,6 @@ pub const backend: Backend = std.meta.stringToEnum(Backend, build_options.engine
 
 pub const Engine = switch (backend) {
     .kiesel => @import("../engines/kiesel.zig").Engine,
-    else => @compileError("engine backend '" ++ build_options.engine ++ "' is not implemented yet"),
+    .quickjs => @import("../engines/quickjs.zig").Engine,
+    .mquickjs => @import("../engines/mquickjs.zig").Engine,
 };

@@ -6,6 +6,15 @@
     .dependencies = .{
         .kiesel = .{
             .path = "../kiesel",
+            .lazy = true,
+        },
+        .quickjs = .{
+            .path = "../quickjs",
+            .lazy = true,
+        },
+        .zig_mquickjs = .{
+            .path = "../zig-mquickjs",
+            .lazy = true,
         },
     },
     .paths = .{
