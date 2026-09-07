@@ -5,15 +5,15 @@
     .minimum_zig_version = "0.16.0",
     .dependencies = .{
         .kiesel = .{
-            .path = "../kiesel",
+            .path = "deps/kiesel",
             .lazy = true,
         },
         .quickjs = .{
-            .path = "../quickjs",
+            .path = "deps/quickjs",
             .lazy = true,
         },
         .zig_mquickjs = .{
-            .path = "../zig-mquickjs",
+            .path = "deps/zig-mquickjs",
             .lazy = true,
         },
     },

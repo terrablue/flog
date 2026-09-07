@@ -1,4 +1,8 @@
-deps
+deps/*
+!deps/
+!deps/quickjs
+!deps/zig-mquickjs
+!deps/kiesel
 flog
 modules
 *.[ao]

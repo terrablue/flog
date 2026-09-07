@@ -1,0 +1,9 @@
+[submodule "deps/quickjs"]
+	path = deps/quickjs
+	url = https://github.com/bellard/quickjs.git
+[submodule "deps/zig-mquickjs"]
+	path = deps/zig-mquickjs
+	url = https://github.com/vExcess/zig-mquickjs.git
+[submodule "deps/kiesel"]
+	path = deps/kiesel
+	url = https://codeberg.org/kiesel-js/kiesel.git

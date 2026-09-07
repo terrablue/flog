@@ -44,7 +44,6 @@ pub fn build(b: *std.Build) void {
                 .optimize = optimize,
                 .@"enable-intl" = false,
                 .@"enable-temporal" = false,
-                .@"build-cli" = false,
             }) orelse return;
             root_module.addImport("kiesel", kiesel.module("kiesel"));
         },
