@@ -1,6 +1,7 @@
 const std = @import("std");
 
 const App = @import("../runtime/app.zig").App;
+const engine = @import("../runtime/engine.zig");
 
 pub const version = @import("../root.zig").version;
 
@@ -27,7 +28,7 @@ pub fn parse(args: []const []const u8) Command {
 }
 
 pub fn printHelp(writer: *std.Io.Writer) std.Io.Writer.Error!void {
-    try writer.print("flog {s}\n\n", .{version});
+    try writer.print("flog {s} ({s})\n\n", .{ version, @tagName(engine.backend) });
     try writer.writeAll(
         \\usage:  flog <file>.js              parse and execute <file>.js
         \\        flog -e <code>              evaluate <code>

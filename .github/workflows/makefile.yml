@@ -35,3 +35,11 @@ jobs:
 
     - name: Unit tests
       run: zig build test -Dengine=${{ matrix.engine }} -Doptimize=${{ matrix.optimize }}
+
+    - name: Integration tests
+      if: matrix.engine != 'mquickjs'
+      run: FLOG_BIN=zig-out/bin/flog bash ./run-tests.sh
+
+    - name: MicroQuickJS smoke test
+      if: matrix.engine == 'mquickjs'
+      run: test "$(zig-out/bin/flog -e 'print(1 + 2)')" = "3"

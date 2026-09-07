@@ -1,3 +1,1 @@
-import console from "std/console";
-
-export default result => console.log(result ? "." : "x");
+export default result => log(result ? "." : "x");

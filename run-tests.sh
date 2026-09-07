@@ -1,37 +1,29 @@
 #!/bin/bash
 
-ret=0
+set -u
+
+binary=${FLOG_BIN:-zig-out/bin/flog}
 passed=0
 failed=0
 
-green=32
-red=31
-
-color () {
-  echo -e "\x1b[$2m$1\x1b[0m"
+run_test() {
+  name=$1
+  expected=$2
+  shift 2
+  output=$("$binary" "$@" 2>/dev/null)
+  status=$?
+  if [ "$status" -eq 0 ] && [ "$output" = "$expected" ]; then
+    printf 'passed %s\n' "$name"
+    passed=$((passed + 1))
+  else
+    printf 'failed %s (status=%s, output=%s)\n' "$name" "$status" "$output"
+    failed=$((failed + 1))
+  fi
 }
 
-for file in test/*; do
-  if [ -d "$file" ]; then
-    if zig-out/bin/flog $file/main.js | grep -q 'x'; then
-      ((failed=failed+1))
-      echo -n "failed "
-      color $file $red
-      ret=1;
-    else
-      ((passed=passed+1))
-      echo -n "passed "
-      color $file $green
-    fi
-  fi
-done
+run_test basic "." test/top-level-await/main.js
+run_test imports $'.\n.' test/imports/main.js
+run_test eval "3" -e 'log(1 + 2)'
 
-echo -e "\ntotals\n======"
-
-echo -n "passed "
-color $passed $green
-echo -n "failed "
-color $failed $red
-echo -e "out of $((passed+failed)) tests"
-
-exit $ret
+printf '\ntotals\n=======\npassed %s\nfailed %s\n' "$passed" "$failed"
+test "$failed" -eq 0
