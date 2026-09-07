@@ -1,4 +1,4 @@
-name: Makefile CI
+name: Zig CI
 
 on:
   push:
@@ -9,17 +9,29 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - engine: kiesel
+            optimize: Debug
+          - engine: quickjs
+            optimize: Debug
+          - engine: mquickjs
+            optimize: ReleaseFast
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
 
-    - name: Install dependencies
-      run: |
-        sudo apt-get -y install libgit2-dev
+    - name: Install Zig
+      uses: goto-bus-stop/setup-zig@v2
+      with:
+        version: 0.16.0
 
-    - name: Compile
-      run: make
+    - name: Build
+      run: zig build -Dengine=${{ matrix.engine }} -Doptimize=${{ matrix.optimize }}
 
-    - name: Test
-      run: bash ./run-tests.sh
+    - name: Unit tests
+      run: zig build test -Dengine=${{ matrix.engine }} -Doptimize=${{ matrix.optimize }}
