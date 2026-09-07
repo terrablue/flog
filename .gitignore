@@ -4,9 +4,7 @@ deps/*
 !deps/zig-mquickjs
 !deps/kiesel
 flog
-modules
-*.[ao]
-*.json
-zig*
+*.o
 .zig-cache/
 zig-out/
+zig-pkg/

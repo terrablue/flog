@@ -1,32 +1,53 @@
 # Flog
 
-Flog is an engine-agnostic **JavaScript** runtime with a minimal core. 
+Flog is an engine-agnostic **JavaScript** runtime with a minimal core.
 
 ## Design goals
 
-* Minimal core as a thin wrapper around QuickJS ✓
+* Minimal core with selectable JavaScript engines ✓
 * Executable and module manager in one WIP
-* Namespaced, officially supported standard library ([flogjs/std][std])
+* Namespaced, officially supported standard library ([rcompat/rcompat][rcompat])
 * Third-party, scoped module area TODO
 * Sandboxing of applications (directory-level scoping) TODO
 
 ### Prerequisites
 
-Flog uses `zig build` to manage dependencies and build the project. 
+Flog uses `zig build` to manage the project and Git submodules to vendor
+engine dependencies.
 
-Flog uses Zig 0.16.0. Download Zig at [https://ziglang.org/download](https://ziglang.org/download) . Newer versions may or may not work.
+Flog uses Zig 0.16.0. Download Zig at
+[https://ziglang.org/download](https://ziglang.org/download).
 
 ### Getting started
 
-```
-zig build                                          # kiesel (default)
-zig build -Dengine=quickjs                         # native QuickJS
-zig build -Dengine=mquickjs -Doptimize=ReleaseFast # MicroQuickJS (eval only)
+Clone the repository with its engine submodules:
+
+```sh
+git clone --recurse-submodules https://github.com/terrablue/flog.git
 ```
 
-Zig 0.16.0 introduced a bug where the compiler fails if your home directory is encrypted. To solve this change the cache to outside your home directory using `--cache-dir /tmp/mquickjs-zig-cache`
+If the repository was cloned without them, initialize them with:
 
-Create an `app.js` file in the same directory.
+```sh
+git submodule update --init --recursive
+```
+
+Build with Kiesel (the default engine), QuickJS, or MicroQuickJS:
+
+```sh
+zig build
+zig build -Dengine=quickjs
+zig build -Dengine=mquickjs -Doptimize=ReleaseFast
+```
+
+Zig 0.16.0 introduced a bug where the compiler fails if your home directory is
+encrypted. To solve this, change the cache to outside your home directory:
+
+```sh
+zig build --cache-dir /tmp/mquickjs-zig-cache
+```
+
+Create an `app.js` file in the same directory:
 
 ```js
 var a = 1
@@ -34,11 +55,22 @@ var b = 2
 log(a + b)
 ```
 
-You can now run flog with this file as the first argument.
+Run flog with this file as the first argument. Help displays the selected engine:
 
 ```sh
 ./zig-out/bin/flog app.js
+./zig-out/bin/flog help
 ```
+
+Run unit and integration tests:
+
+```sh
+zig build test
+bash ./run-tests.sh
+```
+
+The integration script covers Kiesel and QuickJS. MicroQuickJS currently supports
+script and eval smoke tests only because it does not yet support ES modules.
 
 ### Resources
 
@@ -49,5 +81,4 @@ You can now run flog with this file as the first argument.
 MIT
 
 [rfcs]: https://github.com/flogjs/rfcs
-[std]: https://github.com/flogjs/std
-[dl]: https://ziglang.org/builds/zig-linux-x86_64-0.11.0-dev.1646+3f7e9ff59.tar.xz
+[rcompat]: https://github.com/rcompat/rcompat
